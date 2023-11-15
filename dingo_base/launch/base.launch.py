@@ -43,6 +43,6 @@ def generate_launch_description():
 	ld = LaunchDescription()
 	ld.add_action(description_cmd)
 	ld.add_action(start_dingo_control)
-	ld.add_action(start_teleop_control)
+	# ld.add_action(start_teleop_control)
 
 	return ld

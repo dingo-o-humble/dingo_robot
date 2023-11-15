@@ -21,7 +21,7 @@ install(FILES scripts/can-udp-bridge.conf scripts/can-udp-bridge.sh
   DESTINATION bin
 )
 
-install(PROGRAMS scripts/install scripts/set-dingo-o
+install(PROGRAMS scripts/install scripts/set-dingo-config scripts/set-wireless-interface
   DESTINATION bin
 )
 

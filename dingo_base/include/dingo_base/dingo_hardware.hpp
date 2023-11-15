@@ -37,39 +37,41 @@
 
 #include "boost/thread.hpp"
 #include "boost/shared_ptr.hpp"
-#include "hardware_interface/base_interface.hpp"
+// #include "hardware_interface/base_interface.hpp"
 #include "hardware_interface/handle.hpp"
 #include "hardware_interface/hardware_info.hpp"
 #include "hardware_interface/system_interface.hpp"
 #include "hardware_interface/types/hardware_interface_return_values.hpp"
-#include "hardware_interface/types/hardware_interface_status_values.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "puma_motor_driver/socketcan_gateway.hpp"
 #include "puma_motor_driver/driver.hpp"
 #include "puma_motor_driver/multi_driver_node.hpp"
 #include "puma_motor_msgs/msg/multi_feedback.hpp"
 
+using hardware_interface::return_type;
+using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
 namespace dingo_base
 {
 
 /** This class encapsulates the Dingo hardware */
 class DingoHardware 
-: public hardware_interface::BaseInterface<hardware_interface::SystemInterface>
+: public hardware_interface::SystemInterface
 {
 public:
-  hardware_interface::return_type configure(const hardware_interface::HardwareInfo & info) override;
+  CallbackReturn on_init(const hardware_interface::HardwareInfo & info) final;
 
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
-  hardware_interface::return_type start() override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) final;
 
-  hardware_interface::return_type stop() override;
+  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) final;
 
-  hardware_interface::return_type read() override;
+  return_type read(const rclcpp::Time & time, const rclcpp::Duration & period) final;
 
-  hardware_interface::return_type write() override;
+  return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) final;
 
   /** Makes a single attempt to connect to the CAN bus if not connected.
    *  @return true if connected; false if not connected

@@ -49,14 +49,14 @@
 namespace dingo_base
 {
 
-hardware_interface::return_type DingoHardware::configure(
+CallbackReturn DingoHardware::on_init(
 	const hardware_interface::HardwareInfo & info)
 {
 	active_ = false;
 
-	if (configure_default(info) != hardware_interface::return_type::OK)
+	if (hardware_interface::SystemInterface::on_init(info) != CallbackReturn::SUCCESS)
 	{
-		return hardware_interface::return_type::ERROR;
+		return CallbackReturn::ERROR;
 	}
 
 	// Create gateway for the motor drivers
@@ -81,7 +81,7 @@ hardware_interface::return_type DingoHardware::configure(
 				rclcpp::get_logger("controller_manager"),
 				"Joint '%s' has %d command interfaces found. 1 expected.", joint.name.c_str(),
 				joint.command_interfaces.size());
-			return hardware_interface::return_type::ERROR;
+			return CallbackReturn::ERROR;
 		}
 
 		if (joint.command_interfaces[0].name != hardware_interface::HW_IF_VELOCITY)
@@ -90,7 +90,7 @@ hardware_interface::return_type DingoHardware::configure(
 				rclcpp::get_logger("controller_manager"),
 				"Joint '%s' have %s command interfaces found. '%s' expected.", joint.name.c_str(),
 				joint.command_interfaces[0].name.c_str(), hardware_interface::HW_IF_VELOCITY);
-			return hardware_interface::return_type::ERROR;
+			return CallbackReturn::ERROR;
 		}
 
 		if (joint.state_interfaces.size() != 2)
@@ -99,7 +99,7 @@ hardware_interface::return_type DingoHardware::configure(
 				rclcpp::get_logger("controller_manager"),
 				"Joint '%s' has %d state interface. 2 expected.", joint.name.c_str(),
 				joint.state_interfaces.size());
-			return hardware_interface::return_type::ERROR;
+			return CallbackReturn::ERROR;
 		}
 
 		if (joint.state_interfaces[0].name != hardware_interface::HW_IF_POSITION)
@@ -109,7 +109,7 @@ hardware_interface::return_type DingoHardware::configure(
 				"Joint '%s' have '%s' as first state interface. '%s' and '%s' expected.",
 				joint.name.c_str(), joint.state_interfaces[0].name.c_str(),
 				hardware_interface::HW_IF_POSITION);
-			return hardware_interface::return_type::ERROR;
+			return CallbackReturn::ERROR;
 		}
 
 		if (joint.state_interfaces[1].name != hardware_interface::HW_IF_VELOCITY)
@@ -118,7 +118,7 @@ hardware_interface::return_type DingoHardware::configure(
 				rclcpp::get_logger("controller_manager"),
 				"Joint '%s' have '%s' as second state interface. '%s' expected.", joint.name.c_str(),
 				joint.state_interfaces[1].name.c_str(), hardware_interface::HW_IF_VELOCITY);
-			return hardware_interface::return_type::ERROR;
+			return CallbackReturn::ERROR;
 		}
 	}
 
@@ -170,8 +170,8 @@ hardware_interface::return_type DingoHardware::configure(
 
 	boost::shared_ptr<boost::thread> thread(new boost::thread(&DingoHardware::canReadThread, this));
 
-	status_ = hardware_interface::status::CONFIGURED;
-	return hardware_interface::return_type::OK;
+	// status_ = hardware_interface::status::CONFIGURED;
+	return CallbackReturn::SUCCESS;
 }
 
 std::vector<hardware_interface::StateInterface> DingoHardware::export_state_interfaces()
@@ -200,7 +200,7 @@ std::vector<hardware_interface::CommandInterface> DingoHardware::export_command_
 	return command_interfaces;
 }
 
-hardware_interface::return_type DingoHardware::start()
+CallbackReturn DingoHardware::on_activate(const rclcpp_lifecycle::State & previous_state)
 {
 	RCLCPP_INFO(rclcpp::get_logger("controller_manager"), "Starting ...please wait...");
 	while (!connectIfNotConnected())
@@ -208,30 +208,30 @@ hardware_interface::return_type DingoHardware::start()
 		rclcpp::Rate(1).sleep();
 	}
 
-	this->verify();
+	verify();
 
-	status_ = hardware_interface::status::STARTED;
+	// status_ = hardware_interface::status::STARTED;
 	RCLCPP_INFO(rclcpp::get_logger("controller_manager"), "System Successfully started!");
-	return hardware_interface::return_type::OK;
+	return CallbackReturn::SUCCESS;
 }
 
-hardware_interface::return_type DingoHardware::stop()
+CallbackReturn DingoHardware::on_deactivate(const rclcpp_lifecycle::State & previous_state)
 {
 	RCLCPP_INFO(rclcpp::get_logger("controller_manager"), "Stopping ...please wait...");
 
-	status_ = hardware_interface::status::STOPPED;
+	// status_ = hardware_interface::status::STOPPED;
 
 	RCLCPP_INFO(rclcpp::get_logger("controller_manager"), "System successfully stopped!");
 
-	return hardware_interface::return_type::OK;
+	return CallbackReturn::SUCCESS;
 }
 
-hardware_interface::return_type DingoHardware::read()
+return_type DingoHardware::read(const rclcpp::Time & time, const rclcpp::Duration & period)
 {
-	if (this->isActive())
+	if (isActive())
 	{
-		this->powerHasNotReset();
-		this->updateJointsFromHardware();
+		powerHasNotReset();
+		updateJointsFromHardware();
 	}
 	else
 	{
@@ -241,21 +241,21 @@ hardware_interface::return_type DingoHardware::read()
 		}
 	}
 
-	return hardware_interface::return_type::OK;
+	return return_type::OK;
 }
 
-hardware_interface::return_type DingoHardware::write()
+return_type DingoHardware::write(const rclcpp::Time & time, const rclcpp::Duration & period)
 {
-	if (this->isActive())
+	if (isActive())
 	{
-		this->command();
-		this->requestData();
+		command();
+		requestData();
 	}
 	else
 	{
-		this->verify();
+		verify();
 	}
-	return hardware_interface::return_type::OK;
+	return return_type::OK;
 }
 
 bool DingoHardware::connectIfNotConnected()
@@ -301,7 +301,7 @@ bool DingoHardware::areAllDriversActive()
 
 bool DingoHardware::isActive()
 {
-	if (!active_ && this->areAllDriversActive())
+	if (!active_ && areAllDriversActive())
 	{
 		active_ = true;
 		multi_driver_node_->activePublishers(active_);
@@ -309,7 +309,7 @@ bool DingoHardware::isActive()
 			rclcpp::get_logger("controller_manager"),
 			"Dingo Hardware Active");
 	}
-	else if (!this->areAllDriversActive() && active_)
+	else if (!areAllDriversActive() && active_)
 	{
 		active_ = false;
 	}
@@ -380,7 +380,7 @@ void DingoHardware::canReadThread()
 	rclcpp::Rate rate(200);
 	while (rclcpp::ok())
   {
-    this->canRead();
+    canRead();
     rate.sleep();
   }
 }
